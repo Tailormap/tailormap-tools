@@ -1,12 +1,7 @@
 {
   "coreProjectLocation": "projects/core",
   "libraries": [
-    ["@tailormap-viewer", "api"],
-    ["@tailormap-viewer", "shared"],
-    ["@tailormap-viewer", "map"],
-    ["@tailormap-admin", "admin-api"],
-    ["@tailormap-admin", "admin-core"],
-    ["@tailormap-viewer", "core"]
+    ["@tailormap-viewer", "test"]
   ],
   "apps": [
     "app"

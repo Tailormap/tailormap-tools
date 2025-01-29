@@ -1,0 +1,13 @@
+{
+  "name": "@tailormap-viewer/test",
+  "version": "0.0.1",
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "registry": "https://repo.b3p.nl/nexus/repository/npm-private"
+  },
+  "peerDependencies": {
+  },
+  "dependencies": {
+    "tslib": "^2.6.2"
+  }
+}
