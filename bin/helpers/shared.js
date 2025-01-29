@@ -181,6 +181,9 @@ const publishLibrary = async (project, version, dryRun) => {
   await updateProjectPeerDependencies(project);
   await runCommand('npm', versionCommand, getPathFromProjectRoot(`projects/${project}`));
   await runCommand('ng', ['build', project]);
+  if (existsSync(getPathFromProjectRoot(`projects/${project}/tsconfig.schematics.json`))) {
+    await runCommand('npm', ['-p', 'tsconfig.schematics.json'], getPathFromProjectRoot(`projects/${project}`));
+  }
   // note that the push url is not the same as the (anonymous) download url
   if (dryRun) {
     console.log('Would publish ' + project + ` to ${registryFromPackageJson}, but running in dry-run mode`);
