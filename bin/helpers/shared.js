@@ -76,7 +76,7 @@ const getProbableVersion = async () => {
   if (!project) {
     return '';
   }
-  await runCommand('npm', ['version', 'patch', '--no-git-tag-version'], getPathFromProjectRoot(`projects/${project}`));
+  await runCommand('npm', ['version', 'patch', '--no-git-tag-version'], getPathFromProjectRoot(`projects/${project}`), 'ignore');
   const version = await getCurrentVersion(project);
   await runCommand('git', ['checkout', '--', `projects/${project}/package.json`], getPathFromProjectRoot());
   return version;
@@ -100,11 +100,11 @@ const requestVersion = async () => {
   return answers.version;
 };
 
-const runCommand = (command, args, cwd) => {
+const runCommand = (command, args, cwd, stdio = 'inherit') => {
   return new Promise((resolve, reject) => {
     const workingDir = cwd || path.resolve(path.dirname('../'));
     const cmd = spawn(command, args, {
-      stdio: 'inherit',
+      stdio: stdio,
       env: process.env,
       cwd: workingDir,
     });
