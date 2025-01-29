@@ -182,7 +182,9 @@ const publishLibrary = async (project, version, dryRun) => {
   await runCommand('npm', versionCommand, getPathFromProjectRoot(`projects/${project}`));
   await runCommand('ng', ['build', project]);
   if (existsSync(getPathFromProjectRoot(`projects/${project}/tsconfig.schematics.json`))) {
+    console.log('Building schematics for ' + project);
     await runCommand('npm', ['-p', 'tsconfig.schematics.json'], getPathFromProjectRoot(`projects/${project}`));
+    console.log('Done building schematics for ' + project);
   }
   // note that the push url is not the same as the (anonymous) download url
   if (dryRun) {
