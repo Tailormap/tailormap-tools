@@ -62,7 +62,7 @@ const cleanupTemporaryConfiguration = async () => {
     await backupConfiguration();
     for (const lib of libs) {
       await addTemporaryConfiguration(lib);
-      await runCommand('ng', ['extract-i18n', `--configuration=${lib}`], getPathFromProjectRoot('/'));
+      await runCommand('ng', ['extract-i18n', `--configuration=${lib}`], getPathFromProjectRoot());
     }
     await cleanupTemporaryConfiguration();
   } catch (e) {

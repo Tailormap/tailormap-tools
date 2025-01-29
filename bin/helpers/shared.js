@@ -3,7 +3,17 @@ const path = require('path');
 const fs = require("fs/promises");
 const {existsSync, readFileSync} = require('fs');
 
-const tmProjectFilePath = path.resolve(process.cwd(), '/tm-project.json');
+const getPathFromProjectRoot = (fileDirPath) => {
+  if (!fileDirPath) {
+    return path.resolve(process.cwd());
+  }
+  if (Array.isArray(fileDirPath)) {
+    path.resolve(process.cwd(), ...fileDirPath);
+  }
+  return path.resolve(process.cwd(), fileDirPath);
+};
+
+const tmProjectFilePath = getPathFromProjectRoot('tm-project.json');
 
 if (!existsSync(tmProjectFilePath)) {
   console.error('A tm-project.json file is required for Tailormap tools to work. Please provide this, see README for more info. Also the scripts need to run from the root of the project.');
@@ -18,16 +28,6 @@ const availableLibraries = scopedLibraries.map(scopedProject => scopedProject[1]
 const getTailormapProjectFile = () => {
   return tmProjectContents;
 }
-
-const getPathFromProjectRoot = (fileDirPath) => {
-  if (!fileDirPath) {
-    fileDirPath = '/';
-  }
-  if (Array.isArray(fileDirPath)) {
-    path.resolve(process.cwd(), ...fileDirPath);
-  }
-  return path.resolve(process.cwd(), fileDirPath.startsWith('/') ? fileDirPath : '/' + fileDirPath);
-};
 
 const getScopeForLibrary = (project) => {
   return scopedLibraries.find(scopedProject => {
