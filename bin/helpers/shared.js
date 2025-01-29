@@ -169,6 +169,12 @@ const updateProjectPeerDependencies = async (project) => {
 }
 
 const publishLibrary = async (project, version, dryRun) => {
+  const packageJson = await getPackageJson(project);
+  const registryFromPackageJson = packageJson.publishConfig.registry;
+  if (!registryFromPackageJson) {
+    console.error(`Provide a publishConfig with registry URL for ${project}`);
+    process.exit(0);
+  }
   console.log(`Publishing release for ${project}. Supplied version: ${version}. Dry-run: ${dryRun ? 'true' : 'false'}`);
   const npmVersion = version.startsWith('v') ? version.substring(1) : version;
   const versionCommand = version ? ['version', npmVersion] : ['version', 'patch'];
@@ -177,10 +183,10 @@ const publishLibrary = async (project, version, dryRun) => {
   await runCommand('ng', ['build', project]);
   // note that the push url is not the same as the (anonymous) download url
   if (dryRun) {
-    console.log('Would publish ' + project + ' to https://repo.b3p.nl/nexus/repository/npm-public, but running in dry-run mode');
+    console.log('Would publish ' + project + ` to ${registryFromPackageJson}, but running in dry-run mode`);
   } else {
     const scope = getScopeForLibrary(project);
-    await runCommand('npm', ['publish', '--scope=' + scope, '--registry=https://repo.b3p.nl/nexus/repository/npm-public'], getPathFromProjectRoot(`dist/${project}`));
+    await runCommand('npm', ['publish', '--scope=' + scope, `--registry=${registryFromPackageJson}`], getPathFromProjectRoot(`dist/${project}`));
   }
   await updatePeerDependencies(project);
   if (dryRun) {
