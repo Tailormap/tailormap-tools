@@ -1,6 +1,6 @@
 {
   "name": "@tailormap-viewer/tools",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "some helper scripts to perform common tasks like i18n extraction and publishing libraries",
   "scripts": {
     "publish-lib": "npm version patch && npm publish --scope=@tailormap-viewer --registry=https://repo.b3p.nl/nexus/repository/npm-public"
