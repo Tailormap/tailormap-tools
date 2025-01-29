@@ -9,7 +9,8 @@
     "tm-build-application": "bin/build-application.js",
     "tm-publish-library": "bin/publish-new-release.js",
     "tm-publish-all-libraries": "bin/publish-all.js",
-    "tm-extract-i18n": "bin/extract-i18n.js"
+    "tm-extract-i18n": "bin/extract-i18n.js",
+    "tm-add-ng-libraries": "bin/add-ng-libraries.js"
   },
   "dependencies": {
     "chalk": "^4.1.2",
