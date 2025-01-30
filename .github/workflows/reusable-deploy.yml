@@ -1,0 +1,189 @@
+env: # Keep this in sync with Dockerfile version from tailormap-starter
+  NODE_VERSION: "22.13.0"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      lint-script:
+        required: false
+        type: string
+      test-script:
+        required: false
+        type: string
+
+jobs:
+  lint:
+    name: 'Lint'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: 'Install'
+        run: npm install
+
+      - name: 'Lint'
+        run: npm run  ${{ inputs.lint-script || 'lint' }}
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+
+  test:
+    name: 'Test'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: 'Install'
+        run: npm install
+
+      - name: 'Test'
+        run: npm run  ${{ inputs.test-script || 'test:ci' }}
+
+      - name: 'Upload test results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Test Results
+          path: junit.xml
+
+  # Upload event file so test results can be processed for the PR
+  # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: Event File
+          path: ${{ github.event_path }}
+
+  build:
+    name: 'Build and deploy'
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      pull-requests: read
+      deployments: write
+    runs-on: ubuntu-22.04
+    if: vars.DEPLOY == 'true' && ${{ github.author != 'dependabot[bot]' }}
+    env:
+      VERSION: snapshot
+      COMPOSE_PROJECT_NAME: ${{ vars.DEPLOY_PROJECT_NAME }}-snapshot
+      COMPOSE_FILE: docker-compose.yml:docker-compose.traefik.yml
+      BASE_HREF: /
+    needs: [ lint, test ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # If tags aren't fetched the bin/post-build-version-info.js script will leave fields in generated/version.json empty
+          # https://github.com/actions/checkout/issues/701
+          fetch-depth: 0
+      - name: 'GitHub Slug Action'
+        uses: rlespinasse/github-slug-action@v5
+
+      - name: 'Find Current Pull Request'
+        uses: jwalton/gh-find-current-pr@v1
+        id: find-pr
+
+      - name: 'Set variables for PR'
+        # When running on a PR, build and tag the Docker image for a deployment with a different base-href and a static-only deployment on
+        # a path prefix, with the frontend using the /api URL from the main branch deployment.
+        if: ${{ success() && steps.find-pr.outputs.number }}
+        env:
+          PR: ${{ steps.find-pr.outputs.number }}
+        run: |
+          echo "VERSION=pr-${PR}" >> $GITHUB_ENV
+          echo "COMPOSE_PROJECT_NAME=${{ vars.DEPLOY_PROJECT_NAME }}-pr-${PR}" >> $GITHUB_ENV
+          echo "COMPOSE_FILE=docker-compose.yml:docker-compose.traefik.yml:ci/docker-compose.pr.yml" >> $GITHUB_ENV
+          echo "BASE_HREF=/pull-request/${PR}/${GITHUB_REF_NAME_SLUG_URL}/" >> $GITHUB_ENV
+
+      - name: 'Download Dockerfile'
+        uses: actions/checkout@v4
+        with:
+          repository: Tailormap/tailormap-starter
+          path: tailormap-starter
+          sparse-checkout: |
+            Dockerfile
+          sparse-checkout-cone-mode: false
+
+      - name: 'Build image'
+        env:
+          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+
+        # Always uses the 'snapshot' tag of the tailormap-api base image by setting the API_VERSION build arg
+        run: |
+          mv tailormap-starter/Dockerfile .
+          docker build --progress plain --pull --build-arg BASE_HREF=${BASE_HREF} --build-arg VERSION=${VERSION} --build-arg ANGULAR_APP=${{ vars.ANGULAR_APP || 'app' }} --build-arg API_VERSION=snapshot --tag ${{ vars.DEPLOY_IMAGE_TAG }}:${VERSION} .
+          docker save ${{ vars.DEPLOY_IMAGE_TAG }}:${VERSION} > image.tar
+
+      - name: 'Set Docker context for deployment'
+        uses: arwynfr/actions-docker-context@v2
+        with:
+          docker_host: ${{ secrets.DEPLOY_DOCKER_HOST }}
+          context_name: 'dev-server'
+          ssh_cert: ${{ secrets.DEPLOY_DOCKER_HOST_SSH_CERT }}
+          ssh_key: ${{ secrets.DEPLOY_DOCKER_HOST_SSH_KEY }}
+          use_context: true
+
+      - name: 'Add known hosts'
+        run: |
+          DEPLOY_DOCKER_HOST=${{ secrets.DEPLOY_DOCKER_HOST }}
+          ssh-keyscan -H ${DEPLOY_DOCKER_HOST##*@} > $HOME/.ssh/known_hosts
+
+      - name: 'Load Docker image'
+        run: |
+          cat image.tar | docker load
+
+      - name: 'Download Docker Compose files'
+        uses: actions/checkout@v4
+        with:
+          repository: Tailormap/tailormap-viewer
+          path: tailormap-viewer
+          sparse-checkout: |
+            docker-compose*.yml
+          sparse-checkout-cone-mode: false
+
+      - name: 'Update deployment using Docker Compose'
+        env:
+          TAILORMAP_IMAGE: ${{ vars.DEPLOY_IMAGE_TAG }}
+          SOURCE_MAP_AUTH: ${{ secrets.SOURCE_MAP_AUTH }}
+          HOST: ${{ vars.DEPLOY_HOSTNAME }}
+        run: |
+          cd tailormap-viewer
+          docker compose config
+          docker compose up -d --remove-orphans --pull=always
+
+      - name: 'Create GitHub deployment'
+        if: success()
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          environment-url: "https://${{ vars.DEPLOY_HOSTNAME }}${{ env.BASE_HREF }}${{ vars.DEPLOY_URL_PATH }}"
+          environment: ${{ inputs.environment }}
+          initial-status: success
+          ref: "${{ env.GITHUB_HEAD_REF }}"
