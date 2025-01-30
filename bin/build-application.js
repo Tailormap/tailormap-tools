@@ -4,18 +4,17 @@
 const {getCliArgument, getTailormapProjectFile, runCommand, getPathFromProjectRoot, clearCache} = require("./helpers/shared");
 const {generateVersionInfoFile} = require("./helpers/generate-version-info");
 const {compressBundle} = require("./helpers/compress-build");
+const fs = require('fs');
+const path = require('path');
 
-const app = getCliArgument('--app');
+const appArgument = getCliArgument('--app');
 const skipLocalize = getCliArgument('--skip-localize') !== null;
 const language = getCliArgument('--language') || 'en';
 const verbose = getCliArgument('--verbose') !== null;
 const baseHref = getCliArgument('--base-href');
+const renameToApp = getCliArgument('--rename-to-app') !== null;
 
-async function buildApplication(application) {
-  if (!application) {
-    console.log('Please provide application to build with --app');
-    process.exit(1);
-  }
+async function buildApplication(app) {
   await clearCache();
   const buildArgs = ['build', app];
   if (!skipLocalize) {
@@ -27,6 +26,18 @@ async function buildApplication(application) {
   await runCommand('ng', buildArgs, getPathFromProjectRoot());
   generateVersionInfoFile(app);
   compressBundle(app, language, verbose);
+
+  if(app !== 'app' && renameToApp) {
+    const distPath = getPathFromProjectRoot('dist');
+    const appPath = path.join(distPath, app);
+    const targetPath = path.join(distPath, 'app');
+
+    if (fs.existsSync(targetPath)) {
+      fs.rmSync(targetPath, { recursive: true, force: true });
+    }
+
+    fs.renameSync(appPath, targetPath);
+  }
 }
 
-buildApplication(app || getTailormapProjectFile().apps[0])
+buildApplication(appArgument || getTailormapProjectFile().apps[0])
