@@ -13,6 +13,8 @@ on:
       test-script:
         required: false
         type: string
+    secrets:
+      DEPLOY_DOCKER_HOST:
 
 jobs:
   lint:
