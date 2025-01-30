@@ -34,8 +34,6 @@ For tailormap-viewer this looks like:
 
 and for an extension repo this looks like:
 
-For tailormap-viewer this looks like:
-
 ```json
 {
     "coreProjectLocation": "node_modules/@tailormap-viewer/core",
