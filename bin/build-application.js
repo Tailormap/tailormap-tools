@@ -7,7 +7,10 @@ const {compressBundle} = require("./helpers/compress-build");
 const fs = require('fs');
 const path = require('path');
 
-const appArgument = getCliArgument('--app');
+let appArgument = getCliArgument('--app');
+if (appArgument === '') {
+  appArgument = null;
+}
 const skipLocalize = getCliArgument('--skip-localize') !== null;
 const language = getCliArgument('--language') || 'en';
 const verbose = getCliArgument('--verbose') !== null;
