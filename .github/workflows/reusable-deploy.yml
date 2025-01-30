@@ -18,7 +18,6 @@ on:
       DEPLOY_DOCKER_HOST_SSH_CERT:
       DEPLOY_DOCKER_HOST_SSH_KEY:
       SOURCE_MAP_AUTH:
-      GITHUB_TOKEN:
 
 jobs:
   lint:
