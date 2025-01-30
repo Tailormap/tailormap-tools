@@ -32,6 +32,6 @@ jobs:
         run: npm install
 
       - name: 'Lint'
-        run: npm run lint
+        run: npx eslint
         env:
           NODE_OPTIONS: '--max-old-space-size=8192'
