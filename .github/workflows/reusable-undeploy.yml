@@ -1,0 +1,68 @@
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      DEPLOY_DOCKER_HOST:
+      DEPLOY_DOCKER_HOST_SSH_CERT:
+      DEPLOY_DOCKER_HOST_SSH_KEY:
+
+jobs:
+  undeploy:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 'Set variables for PR'
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          PROJECT_NAME: ${{ vars.DEPLOY_PROJECT_NAME }}
+        run: |
+          echo "VERSION_TAG=pr-${PR}" >> $GITHUB_ENV
+          echo "COMPOSE_PROJECT_NAME=${PROJECT_NAME}-pr-${PR}" >> $GITHUB_ENV
+
+      - uses: arwynfr/actions-docker-context@v2
+        with:
+          docker_host: ${{ secrets.DEPLOY_DOCKER_HOST }}
+          context_name: 'dev-server'
+          ssh_cert: ${{ secrets.DEPLOY_DOCKER_HOST_SSH_CERT }}
+          ssh_key: ${{ secrets.DEPLOY_DOCKER_HOST_SSH_KEY }}
+          use_context: true
+
+      - name: 'Add known hosts'
+        run: |
+          DEPLOY_DOCKER_HOST=${{ secrets.DEPLOY_DOCKER_HOST }}
+          ssh-keyscan -H ${DEPLOY_DOCKER_HOST##*@} > $HOME/.ssh/known_hosts
+
+      - uses: actions/checkout@v4
+        with:
+          repository: B3Partners/tailormap-viewer
+          path: tailormap-viewer
+          sparse-checkout: |
+            docker-compose*.yml
+          sparse-checkout-cone-mode: false
+
+      - name: 'Remove pull request deployment and image'
+        env:
+          COMPOSE_FILE: docker-compose.yml:docker-compose.traefik.yml:ci/docker-compose.pr.yml
+          VERSION: ${{ env.VERSION_TAG }}
+          TAILORMAP_IMAGE: ${{ vars.DEPLOY_IMAGE_TAG }}
+        run: |
+          cd tailormap-viewer
+          docker compose config
+          docker compose down --rmi all --volumes --remove-orphans
+
+      - name: 'GitHub Slug Action'
+        uses: rlespinasse/github-slug-action@v5
+
+      - name: 'Remove GitHub deployment and environment'
+        if: ${{ always() }}
+        uses: strumwolf/delete-deployment-environment@v3.0.0
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          environment: ${{ inputs.environment }}
+          onlyRemoveDeployments: true
+          ref: "${{ env.GITHUB_HEAD_REF }}"
