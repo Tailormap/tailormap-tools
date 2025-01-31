@@ -2,10 +2,15 @@ const path = require('path');
 const fs = require('fs');
 const {getPathFromProjectRoot, getTailormapProjectFile} = require("./shared");
 
-function getPackageVersion() {
-  const corePackageLocation = getTailormapProjectFile().coreProjectLocation;
+function getPackageVersion(packageName) {
+  let packageLocation;
+  if (!packageName) {
+    packageLocation = getTailormapProjectFile().coreProjectLocation || 'node_modules/@tailormap-viewer/core';
+  } else {
+    packageLocation = `node_modules/${packageName}`;
+  }
   try {
-    return require(getPathFromProjectRoot(`${corePackageLocation}/package.json`)).version;
+    return require(getPathFromProjectRoot(`${packageLocation}/package.json`)).version;
   } catch (error) {
     return undefined;
   }

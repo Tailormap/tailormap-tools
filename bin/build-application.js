@@ -43,4 +43,4 @@ async function buildApplication(app) {
   }
 }
 
-buildApplication(appArgument || getTailormapProjectFile().apps[0])
+buildApplication(appArgument || buildApplication(appArgument || (getTailormapProjectFile().apps?.length > 0 ? getTailormapProjectFile().apps[0] : 'app')))
