@@ -68,12 +68,12 @@ jobs:
       - name: 'Test'
         run: npm run  ${{ inputs.test-script || 'test:ci' }}
 
-      - name: 'Upload test results'
-        uses: actions/upload-artifact@v4
+      - name: 'Publish test results'
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          name: Test Results
-          path: junit.xml
+          files: junit.xml
+          check_name: 'Test results ${{ inputs.environment }}'
 
   build_libraries:
     name: "Build Angular libraries"
@@ -97,18 +97,6 @@ jobs:
 
       - name: 'Build Angular libraries (release dry-run)'
         run: npx tm-publish-all-libraries --dry-run --version=0.0.0
-
-  # Upload event file so test results can be processed for the PR
-  # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
-  event_file:
-    name: "Event File"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: Event File
-          path: ${{ github.event_path }}
 
   build:
     name: 'Build and deploy'
