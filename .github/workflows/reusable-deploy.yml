@@ -125,7 +125,7 @@ jobs:
           echo "VERSION=pr-${PR}" >> $GITHUB_ENV
           echo "COMPOSE_PROJECT_NAME=${{ vars.DEPLOY_PROJECT_NAME }}-pr-${PR}" >> $GITHUB_ENV
           echo "COMPOSE_FILE=docker-compose.yml:docker-compose.traefik.yml:ci/docker-compose.pr.yml" >> $GITHUB_ENV
-          echo "BASE_HREF=/pull-request/${PR}/${GITHUB_REF_NAME_SLUG_URL}/" >> $GITHUB_ENV
+          echo "BASE_HREF=/pull-request/${PR}/${GITHUB_HEAD_REF_SLUG_URL}/" >> $GITHUB_ENV
 
       - name: 'Download Dockerfile'
         uses: actions/checkout@v4
