@@ -193,13 +193,13 @@ const publishLibrary = async (project, version, dryRun) => {
   await updateProjectPeerDependencies(project);
   await runCommand('npm', versionCommand, getPathFromProjectRoot(`projects/${project}`));
   await runCommand('ng', ['build', project]);
-  if (packageJson.scripts.build) {
+  if (packageJson.scripts?.build) {
     console.log('Found build command for ' + project);
     await runCommand('npm', ['run', 'build'], getPathFromProjectRoot(`projects/${project}`));
-    console.log('Runned build command for ' + project);
+    console.log('Ran build command for ' + project);
   } else if (existsSync(getPathFromProjectRoot(`projects/${project}/tsconfig.schematics.json`))) {
     console.log('Building schematics for ' + project);
-    await runCommand('npm', ['-p', 'tsconfig.schematics.json'], getPathFromProjectRoot(`projects/${project}`));
+    await runCommand('tsc', ['-p', 'tsconfig.schematics.json'], getPathFromProjectRoot(`projects/${project}`));
     console.log('Done building schematics for ' + project);
   }
   // note that the push url is not the same as the (anonymous) download url
