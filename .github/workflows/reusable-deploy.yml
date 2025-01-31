@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        required: true
+        required: false
         type: string
       lint-script:
         required: false
@@ -100,7 +100,7 @@ jobs:
 
   build:
     name: 'Build and deploy'
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.environment || 'test' }}
     permissions:
       contents: read
       pull-requests: read
@@ -200,6 +200,6 @@ jobs:
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           environment-url: "https://${{ vars.DEPLOY_HOSTNAME }}${{ env.BASE_HREF }}${{ vars.DEPLOY_URL_PATH }}"
-          environment: ${{ inputs.environment }}
+          environment: ${{ inputs.environment || 'test' }}
           initial-status: success
           ref: "${{ env.GITHUB_HEAD_REF }}"

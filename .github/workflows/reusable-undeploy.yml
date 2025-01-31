@@ -2,7 +2,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        required: true
+        required: false
         type: string
     secrets:
       DEPLOY_DOCKER_HOST:
@@ -11,7 +11,7 @@ on:
 
 jobs:
   undeploy:
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.environment || 'test' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -63,6 +63,6 @@ jobs:
         uses: strumwolf/delete-deployment-environment@v3.0.0
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
-          environment: ${{ inputs.environment }}
+          environment: ${{ inputs.environment || 'test' }}
           onlyRemoveDeployments: true
           ref: "${{ env.GITHUB_HEAD_REF }}"
