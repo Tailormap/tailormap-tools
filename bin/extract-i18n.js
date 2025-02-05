@@ -7,6 +7,8 @@ const fs = require("fs/promises");
 const {readdirSync} = require("fs");
 
 const singleLibrary = getCliArgument('--library');
+const optionalKey = getCliArgument('--key');
+
 const getDirectories = source => {
   return readdirSync(source, {withFileTypes: true})
     .filter(dirent => dirent.isDirectory())
@@ -19,7 +21,7 @@ const angularJsonBackupPath = getPathFromProjectRoot('angular.json.orig');
 const addTemporaryConfiguration = async (library) => {
   const configuration = {
     "outputPath": `projects/${library}/assets/locale`,
-    "includeIdsWithPrefix": [library],
+    "includeIdsWithPrefix": [optionalKey || library],
     "sourceFile": `messages.${library}.en.xlf`,
     "targetFiles": [
       `messages.${library}.nl.xlf`,
