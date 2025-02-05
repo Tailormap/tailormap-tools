@@ -3,14 +3,8 @@ const fs = require('fs');
 const {getPathFromProjectRoot, getTailormapProjectFile} = require("./shared");
 
 function getPackageVersion(packageName) {
-  let packageLocation;
-  if (!packageName) {
-    packageLocation = getTailormapProjectFile().coreProjectLocation || 'node_modules/@tailormap-viewer/core';
-  } else {
-    packageLocation = `node_modules/${packageName}`;
-  }
   try {
-    return require(getPathFromProjectRoot(`${packageLocation}/package.json`)).version;
+    return require(getPathFromProjectRoot(`node_modules/${packageName}/package.json`)).version;
   } catch (error) {
     return undefined;
   }
@@ -30,7 +24,7 @@ function getAddedPackagesWithVersion() {
 function generateVersionInfoFile(app) {
   try {
     const file = getPathFromProjectRoot(`dist/${app}/version.json`);
-    const appVersion = getPackageVersion();
+    const appVersion = getPackageVersion(getTailormapProjectFile().coreProjectLocation || 'node_modules/@tailormap-viewer/core');
     const versionInfo = {
       version: appVersion,
       buildDate: Date(),

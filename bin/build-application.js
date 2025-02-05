@@ -43,4 +43,9 @@ async function buildApplication(app) {
   }
 }
 
-buildApplication(appArgument || buildApplication(appArgument || (getTailormapProjectFile().apps?.length > 0 ? getTailormapProjectFile().apps[0] : 'app')))
+let app = appArgument;
+if (!app) {
+  const configFileApps = getTailormapProjectFile().apps;
+  app = configFileApps?.length > 0 ? configFileApps[0] : 'app';
+}
+buildApplication(app);
