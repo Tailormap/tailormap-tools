@@ -41,6 +41,35 @@ async function buildApplication(app) {
 
     fs.renameSync(appPath, targetPath);
   }
+
+  await moveBundleWhenNotSourceLocale();
+}
+
+async function moveBundleWhenNotSourceLocale() {
+  const distPath = getPathFromProjectRoot('dist');
+  const appPath = path.join(distPath, 'app');
+
+  // When index.html exists, the app is built with the source locale without localization
+  if(fs.existsSync(path.join(appPath, 'index.html'))) {
+    return;
+  }
+
+  // Look at the locale directories
+  const dirs = fs.readdirSync(appPath, { withFileTypes: true }).filter(dirent => dirent.isDirectory());
+  if (dirs.length > 1) {
+    // Multiple locale bundles, nothing to do
+    return;
+  }
+
+  // Single locale bundle, move it one directory up and change the base-ref
+  const locale = dirs[0].name;
+  const localizedAppPath = path.join(appPath, locale);
+  await runCommand('bash', ['-c', `mv ${localizedAppPath}/* ${appPath}`]);
+  await runCommand('rmdir', [localizedAppPath]);
+  const indexHtmlPath = path.join(appPath, 'index.html');
+  let indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
+  indexHtml = indexHtml.replace(`<base href="/${locale}/"`, '<base href="/"');
+  fs.writeFileSync(indexHtmlPath, indexHtml, 'utf8');
 }
 
 let app = appArgument;

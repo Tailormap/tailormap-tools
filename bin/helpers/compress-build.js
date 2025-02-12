@@ -12,7 +12,7 @@ function compressBundle(app, language, verbose) {
   console.log('Compressing bundle...');
   const start = Date.now();
 
-// recursive option requires Node v20
+  // recursive option requires Node v20
   const files = fs.readdirSync(getPathFromProjectRoot(`dist/${app}`), {recursive: true, withFileTypes: true})
     .filter(entry => entry.isFile())
     .filter(entry => EXTENSIONS.includes(path.extname(entry.name)))
