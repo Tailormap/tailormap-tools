@@ -69,7 +69,7 @@ async function moveBundleWhenNotSourceLocale(app) {
   await runCommand('rmdir', [localizedAppPath]);
   const indexHtmlPath = path.join(appPath, 'index.html');
   let indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
-  indexHtml = indexHtml.replace(new RegExp(`<base href="(/[^/]+)?/${locale}/"`), '<base href="$1/"');
+  indexHtml = indexHtml.replace(new RegExp(`<base href="(/.+)?/${locale}/"`), '<base href="$1/"');
   fs.writeFileSync(indexHtmlPath, indexHtml, 'utf8');
 }
 
