@@ -182,9 +182,9 @@ const updateProjectPeerDependencies = async (project) => {
 
 const publishLibrary = async (project, version, dryRun) => {
   const packageJson = await getPackageJson(project);
-  const registryFromPackageJson = packageJson.publishConfig.registry;
+  const registryFromPackageJson = packageJson.publishConfig?.registry;
   if (!registryFromPackageJson) {
-    console.error(`Provide a publishConfig with registry URL for ${project}`);
+    console.error(`Error: Did not find a publishConfig with registry URL in ${getPackageJsonPath(project)}`);
     process.exit(0);
   }
   console.log(`Publishing release for ${project}. Supplied version: ${version}. Dry-run: ${dryRun ? 'true' : 'false'}`);
