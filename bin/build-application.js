@@ -17,6 +17,15 @@ const verbose = getCliArgument('--verbose') !== null;
 const baseHref = getCliArgument('--base-href');
 const renameToApp = getCliArgument('--rename-to-app') !== null;
 
+async function moveFilesInDirectoryToParent(dir) {
+  const parentDir = path.join(dir, '..');
+  const files = fs.readdirSync(dir);
+  files.forEach(file => {
+    fs.renameSync(path.join(dir, file), path.join(parentDir, file));
+  });
+  fs.rmdirSync(dir);
+}
+
 async function buildApplication(app) {
   await clearCache();
   const buildArgs = ['build', app];
@@ -27,11 +36,10 @@ async function buildApplication(app) {
     buildArgs.push('--base-href=' + baseHref);
   }
   await runCommand('ng', buildArgs, getPathFromProjectRoot());
-  generateVersionInfoFile(app);
-  compressBundle(app, language, verbose);
+
+  const distPath = getPathFromProjectRoot('dist');
 
   if(app !== 'app' && renameToApp) {
-    const distPath = getPathFromProjectRoot('dist');
     const appPath = path.join(distPath, app);
     const targetPath = path.join(distPath, 'app');
 
@@ -42,6 +50,16 @@ async function buildApplication(app) {
     fs.renameSync(appPath, targetPath);
     app = 'app';
   }
+
+  // change in 6a29a4351b0d56b31e4ea98cabac24508dbfa435 leads to extra 'browser' directory in dist/app
+  const appPath = path.join(distPath, app);
+  const browserDir = path.join(appPath, 'browser');
+  if (fs.existsSync(browserDir)) {
+    moveFilesInDirectoryToParent(browserDir);
+  }
+
+  generateVersionInfoFile(app);
+  compressBundle(app, language, verbose);
 
   await moveBundleWhenNotSourceLocale(app);
 }
@@ -62,11 +80,10 @@ async function moveBundleWhenNotSourceLocale(app) {
     return;
   }
 
-  // Single locale bundle, move it one directory up and change the base-href
+  // Single locale bundle built using '--skip-localize --locale=<locale>', move it one directory up and change the base-href
   const locale = dirs[0].name;
   const localizedAppPath = path.join(appPath, locale);
-  await runCommand('bash', ['-c', `mv ${localizedAppPath}/* ${appPath}`]);
-  await runCommand('rmdir', [localizedAppPath]);
+  moveFilesInDirectoryToParent(localizedAppPath);
   const indexHtmlPath = path.join(appPath, 'index.html');
   let indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
   indexHtml = indexHtml.replace(new RegExp(`<base href="(/.+)?/${locale}/"`), '<base href="$1/"');
