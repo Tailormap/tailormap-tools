@@ -1,5 +1,4 @@
 {
-  "coreProjectLocation": "projects/core",
   "libraries": [
     ["@tailormap-viewer", "test"]
   ],
