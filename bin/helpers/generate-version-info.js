@@ -4,7 +4,8 @@ const {getPathFromProjectRoot, getTailormapProjectFile} = require("./shared");
 
 function getPackageVersion(packageName) {
   try {
-    return require(getPathFromProjectRoot(`node_modules/${packageName}/package.json`)).version;
+    console.log('Getting project version for:', packageName);
+    return require(getPathFromProjectRoot(`${packageName}/package.json`)).version;
   } catch (error) {
     return undefined;
   }
@@ -14,7 +15,7 @@ function getAddedPackagesWithVersion() {
   try {
     const packages = require(getPathFromProjectRoot('added-packages.json'));
     return packages.map(packageName => {
-      return {name: packageName, version: getPackageVersion(packageName)};
+      return {name: packageName, version: getPackageVersion(`node_modules/${packageName}`)};
     });
   } catch (error) {
     return [];
