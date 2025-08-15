@@ -1,5 +1,5 @@
 env: # Keep this in sync with Dockerfile version from tailormap-starter
-  NODE_VERSION: "22.16.0"
+  NODE_VERSION: "22.18.0"
 
 on:
   workflow_call:
