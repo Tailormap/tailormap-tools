@@ -207,7 +207,8 @@ const publishLibrary = async (project, version, dryRun) => {
     console.log('Would publish ' + project + ` to ${registryFromPackageJson}, but running in dry-run mode`);
   } else {
     const scope = getScopeForLibrary(project);
-    await runCommand('npm', ['publish', '--scope=' + scope, `--registry=${registryFromPackageJson}`], getPathFromProjectRoot(`dist/${project}`));
+    const tag = npmVersion.indexOf('-rc') !== -1 ? 'next' : 'latest';
+    await runCommand('npm', ['publish', `--scope=${scope}`, `--registry=${registryFromPackageJson}`, `--tag=${tag}`], getPathFromProjectRoot(`dist/${project}`));
   }
   await updatePeerDependencies(project);
   if (dryRun) {
