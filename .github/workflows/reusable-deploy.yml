@@ -174,10 +174,11 @@ jobs:
           TAILORMAP_IMAGE: ${{ vars.DEPLOY_IMAGE_TAG }}
           SOURCE_MAP_AUTH: ${{ secrets.SOURCE_MAP_AUTH }}
           HOST: ${{ vars.DEPLOY_HOSTNAME }}
+          COMPOSE_PROFILES: ${{ vars.DEPLOY_COMPOSE_PROFILES }} 
         run: |
           cd tailormap-viewer
-          COMPOSE_PROFILES=${{ vars.DEPLOY_COMPOSE_PROFILES }} docker compose config
-          COMPOSE_PROFILES=${{ vars.DEPLOY_COMPOSE_PROFILES }} docker compose up -d --remove-orphans --pull=always
+          docker compose config
+          docker compose up -d --remove-orphans --pull=always
 
       - name: 'Create GitHub deployment'
         if: success()
