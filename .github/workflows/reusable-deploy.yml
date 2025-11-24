@@ -24,7 +24,7 @@ jobs:
     name: 'Lint'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v6
         with:
@@ -44,7 +44,7 @@ jobs:
     name: 'Test'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v6
         with:
@@ -69,7 +69,7 @@ jobs:
     name: "Build Angular libraries"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v6
         with:
@@ -99,7 +99,7 @@ jobs:
       BASE_HREF: /
     needs: [ lint, test ]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # If tags aren't fetched the bin/post-build-version-info.js script will leave fields in generated/version.json empty
           # https://github.com/actions/checkout/issues/701
@@ -124,7 +124,7 @@ jobs:
           echo "BASE_HREF=/pull-request/${PR}/${GITHUB_HEAD_REF_SLUG_URL}/" >> $GITHUB_ENV
 
       - name: 'Download Dockerfile'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: Tailormap/tailormap-starter
           path: tailormap-starter
@@ -161,7 +161,7 @@ jobs:
           cat image.tar | docker load
 
       - name: 'Download Docker Compose files'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: Tailormap/tailormap-viewer
           path: tailormap-viewer
