@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-'use strict';
 
-const {getCliArgument, getTailormapProjectFile, runCommand, getPathFromProjectRoot, clearCache} = require("./helpers/shared");
-const {generateVersionInfoFile} = require("./helpers/generate-version-info");
-const {compressBundle} = require("./helpers/compress-build");
-const fs = require('fs');
-const path = require('path');
+import {getCliArgument, getTailormapProjectFile, runCommand, getPathFromProjectRoot, clearCache} from './helpers/shared.js';
+import {generateVersionInfoFile} from './helpers/generate-version-info.js';
+import {compressBundle} from './helpers/compress-build.js';
+import fs from 'fs';
+import path from 'path';
 
 let appArgument = getCliArgument('--app');
 if (appArgument === '') {

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-'use strict';
 
-const {checkCleanGitRepo, requestLibrary, getCliArgument, hasCliArgument, publishLibrary, requestVersion} = require("./helpers/shared");
+import {checkCleanGitRepo, requestLibrary, getCliArgument, hasCliArgument, publishLibrary, requestVersion} from './helpers/shared.js';
 
 checkCleanGitRepo();
 

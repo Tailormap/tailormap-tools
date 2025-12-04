@@ -1,8 +1,8 @@
-const path = require('path');
-const fs = require('fs');
-const zlib = require('zlib');
-const chalk = require('chalk');
-const {getPathFromProjectRoot} = require("./shared");
+import path from 'path';
+import fs from 'fs';
+import zlib from 'zlib';
+import chalk from 'chalk';
+import {getPathFromProjectRoot} from './shared.js';
 
 const EXTENSIONS = ['.js', '.css', '.svg', '.map'];
 const COMPRESS_SIZE_THRESHOLD = 1024;
@@ -49,4 +49,4 @@ function compressBundle(app, language, verbose) {
   console.log(`Compressed bundle in ${(Date.now() - start).toFixed(0)}ms`);
 }
 
-exports.compressBundle = compressBundle;
+export {compressBundle};
