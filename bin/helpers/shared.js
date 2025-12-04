@@ -1,7 +1,7 @@
-const {spawn, execSync} = require('child_process');
-const path = require('path');
-const fs = require("fs/promises");
-const {existsSync, readFileSync} = require('fs');
+import {spawn, execSync} from 'child_process';
+import path from 'path';
+import fs from 'fs/promises';
+import {existsSync, readFileSync} from 'fs';
 
 const getPathFromProjectRoot = (fileDirPath) => {
   if (!fileDirPath) {
@@ -238,15 +238,17 @@ const clearCache = async () => {
   await runCommand('rm', ['-rf', '.nx'], getPathFromProjectRoot());
 }
 
-exports.requestLibrary = requestLibrary;
-exports.requestVersion = requestVersion;
-exports.checkCleanGitRepo = checkCleanGitRepo;
-exports.runCommand = runCommand;
-exports.availableLibraries = availableLibraries;
-exports.getCliArgument = getCliArgument;
-exports.hasCliArgument = hasCliArgument;
-exports.publishLibrary = publishLibrary;
-exports.sleep = sleep;
-exports.clearCache = clearCache;
-exports.getPathFromProjectRoot = getPathFromProjectRoot;
-exports.getTailormapProjectFile = getTailormapProjectFile;
+export {
+  requestLibrary,
+  requestVersion,
+  checkCleanGitRepo,
+  runCommand,
+  availableLibraries,
+  getCliArgument,
+  hasCliArgument,
+  publishLibrary,
+  sleep,
+  clearCache,
+  getPathFromProjectRoot,
+  getTailormapProjectFile
+};

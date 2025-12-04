@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-'use strict';
 
-const {runCommand, getCliArgument, clearCache, getPathFromProjectRoot} = require("./helpers/shared");
-const path = require("path");
-const fs = require("fs/promises");
-const {readdirSync} = require("fs");
+import {runCommand, getCliArgument, clearCache, getPathFromProjectRoot} from './helpers/shared.js';
+import path from 'path';
+import fs from 'fs/promises';
+import {readdirSync} from 'fs';
 
 const singleLibrary = getCliArgument('--library');
 const optionalKey = getCliArgument('--key');

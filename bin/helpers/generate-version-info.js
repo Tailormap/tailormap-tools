@@ -1,11 +1,13 @@
-const path = require('path');
-const fs = require('fs');
-const {getPathFromProjectRoot, getTailormapProjectFile} = require("./shared");
+import path from 'path';
+import fs from 'fs';
+import {getPathFromProjectRoot, getTailormapProjectFile} from './shared.js';
 
 function getPackageVersion(packageName) {
   try {
     console.log('Getting project version for:', packageName);
-    return require(getPathFromProjectRoot(`${packageName}/package.json`)).version;
+    const packageJsonPath = getPathFromProjectRoot(`${packageName}/package.json`);
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    return packageJson.version;
   } catch (error) {
     return undefined;
   }
@@ -13,7 +15,8 @@ function getPackageVersion(packageName) {
 
 function getAddedPackagesWithVersion() {
   try {
-    const packages = require(getPathFromProjectRoot('added-packages.json'));
+    const addedPackagesPath = getPathFromProjectRoot('added-packages.json');
+    const packages = JSON.parse(fs.readFileSync(addedPackagesPath, 'utf-8'));
     return packages.map(packageName => {
       return {name: packageName, version: getPackageVersion(`node_modules/${packageName}`)};
     });
@@ -39,4 +42,4 @@ function generateVersionInfoFile(app) {
   }
 }
 
-exports.generateVersionInfoFile = generateVersionInfoFile;
+export {generateVersionInfoFile};
