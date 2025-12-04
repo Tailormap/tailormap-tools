@@ -17,8 +17,8 @@ function compressBundle(app, language, verbose) {
     .filter(entry => entry.isFile())
     .filter(entry => EXTENSIONS.includes(path.extname(entry.name)))
     .map(entry => ({
-      filename: path.join(entry.path, entry.name),
-      displayName: path.join(entry.path, entry.name).split('/dist/')[1],
+      filename: path.join(entry.parentPath, '/', entry.name),
+      displayName: path.join(entry.parentPath, '/', entry.name).split('/dist/')[1],
     }));
 
   const displayNamePad = files.reduce((previous, current) => Math.max(previous, current.displayName.length), 0) - 2;
