@@ -8,7 +8,7 @@ const getPathFromProjectRoot = (fileDirPath) => {
     return path.resolve(process.cwd());
   }
   if (Array.isArray(fileDirPath)) {
-    path.resolve(process.cwd(), ...fileDirPath);
+    return path.resolve(process.cwd(), ...fileDirPath);
   }
   return path.resolve(process.cwd(), fileDirPath);
 };
