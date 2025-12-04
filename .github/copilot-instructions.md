@@ -43,7 +43,11 @@ Example for Tailormap Viewer:
   "coreProjectLocation": "projects/core",
   "libraries": [
     ["@tailormap-viewer", "api"],
-    ["@tailormap-viewer", "shared"]
+    ["@tailormap-viewer", "shared"],
+    ["@tailormap-viewer", "map"],
+    ["@tailormap-admin", "admin-api"],
+    ["@tailormap-admin", "admin-core"],
+    ["@tailormap-viewer", "core"]
   ]
 }
 ```
