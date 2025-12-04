@@ -1,6 +1,6 @@
 {
   "name": "@tailormap-viewer/tools",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "some helper scripts to perform common tasks like i18n extraction and publishing libraries",
   "scripts": {
     "lint": "eslint",
@@ -14,12 +14,12 @@
     "tm-add-ng-libraries": "bin/add-ng-libraries.js"
   },
   "dependencies": {
-    "chalk": "^4.1.2",
-    "inquirer": "^12.9.2"
+    "chalk": "^5.6.2",
+    "inquirer": "^13.0.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.19.0",
-    "eslint": "^9.19.0",
-    "globals": "^15.14.0"
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0"
   }
 }
