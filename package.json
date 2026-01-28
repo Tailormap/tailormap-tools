@@ -1,6 +1,6 @@
 {
   "name": "@tailormap-viewer/tools",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "description": "some helper scripts to perform common tasks like i18n extraction and publishing libraries",
   "type": "module",
   "scripts": {
