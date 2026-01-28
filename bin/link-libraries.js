@@ -424,7 +424,7 @@ function addEnvironmentImport(scope, libName, moduleClass) {
     // Find the imports array closing bracket and add before it
     content = content.replace(
       /(\s*)(],?\s*)(};?\s*$)/m,
-      (match, indent, bracket, end) => {
+      (match, _indent, _bracket, _end) => {
         // Find the imports: [ pattern and its closing ]
         const importsMatch = content.match(/imports:\s*\[\s*([\s\S]*?)\s*\]/);
         if (importsMatch) {
