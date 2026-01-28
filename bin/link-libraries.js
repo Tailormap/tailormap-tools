@@ -162,62 +162,6 @@ function removeTsconfigPath(scope, libName) {
 }
 
 // =============================================================================
-// angular.json Management
-// =============================================================================
-
-function addAngularProject(moduleName, prefix = 'tm') {
-  logInfo(`Adding project '${moduleName}' to angular.json...`);
-
-  const angular = readJson(ANGULAR_JSON);
-  angular.projects[moduleName] = {
-    projectType: 'library',
-    root: `projects/${moduleName}`,
-    sourceRoot: `projects/${moduleName}/src`,
-    prefix: prefix,
-    architect: {
-      build: {
-        builder: '@angular/build:ng-packagr',
-        options: {
-          project: `projects/${moduleName}/ng-package.json`,
-          tsConfig: `projects/${moduleName}/tsconfig.lib.json`,
-        },
-        configurations: {
-          production: {
-            tsConfig: `projects/${moduleName}/tsconfig.lib.prod.json`,
-          },
-          development: {
-            tsConfig: `projects/${moduleName}/tsconfig.lib.json`,
-          },
-        },
-        defaultConfiguration: 'production',
-      },
-      lint: {
-        builder: '@angular-eslint/builder:lint',
-        options: {
-          lintFilePatterns: [
-            `projects/${moduleName}/**/*.ts`,
-            `projects/${moduleName}/**/*.html`,
-          ],
-        },
-      },
-    },
-  };
-  writeJson(ANGULAR_JSON, angular);
-
-  logSuccess(`Added angular.json project: ${moduleName}`);
-}
-
-function removeAngularProject(moduleName) {
-  logInfo(`Removing project '${moduleName}' from angular.json...`);
-
-  const angular = readJson(ANGULAR_JSON);
-  delete angular.projects[moduleName];
-  writeJson(ANGULAR_JSON, angular);
-
-  logSuccess(`Removed angular.json project: ${moduleName}`);
-}
-
-// =============================================================================
 // Assets & Styles Management
 // =============================================================================
 
@@ -584,7 +528,6 @@ function cmdLink(args) {
   // Perform linking
   const resolvedSource = createSymlink(absoluteSource, dirName);
   addTsconfigPath(scope, dirName, libName);
-  addAngularProject(dirName, prefix);
   if (moduleClass) {
     addEnvironmentImport(scope, libName, moduleClass);
   }
@@ -664,7 +607,6 @@ function cmdUnlink(args) {
   // Perform unlinking
   removeSymlink(dirName);
   removeTsconfigPath(scope, libName);
-  removeAngularProject(dirName);
   if (moduleClass) {
     removeEnvironmentImport(scope, libName, moduleClass);
   }
