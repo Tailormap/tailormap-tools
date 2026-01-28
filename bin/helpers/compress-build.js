@@ -1,8 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import zlib from 'zlib';
-import chalk from 'chalk';
-import {getPathFromProjectRoot} from './shared.js';
+import {consoleMarkup, getPathFromProjectRoot} from './shared.js';
 
 const EXTENSIONS = ['.js', '.css', '.svg', '.map'];
 const COMPRESS_SIZE_THRESHOLD = 1024;
@@ -36,7 +35,7 @@ function compressBundle(app, language, verbose) {
       fs.writeFileSync(entry.filename + ".gz", gzipped);
 
       const ratio = (gzipped.length / size).toFixed(2);
-      verbose && process.stdout.write(` ${chalk.bold(ratio)}\n`);
+      verbose && process.stdout.write(` ${consoleMarkup.bold(ratio)}\n`);
 
       if (entry.displayName.startsWith(`${app}/${language}/`) && path.extname(entry.filename) !== '.map') {
         bundleTotal += size;
@@ -45,7 +44,7 @@ function compressBundle(app, language, verbose) {
     }
   });
 
-  console.log(`Total single bundle compression ratio: ${chalk.green(chalk.bold((compressedTotal / bundleTotal).toFixed(2)))}, saved ${chalk.bold(((bundleTotal - compressedTotal) / 1024).toFixed(0))} KiB`);
+  console.log(`Total single bundle compression ratio: ${consoleMarkup.boldGreen((compressedTotal / bundleTotal).toFixed(2))}, saved ${consoleMarkup.bold(((bundleTotal - compressedTotal) / 1024).toFixed(0))} KiB`);
   console.log(`Compressed bundle in ${(Date.now() - start).toFixed(0)}ms`);
 }
 
