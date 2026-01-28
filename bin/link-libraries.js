@@ -14,10 +14,10 @@
  *   node link-modules.js revert
  */
 
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-const {consoleMarkup} = require("./helpers/shared.js");
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
+import {consoleMarkup} from "./helpers/shared.js";
 
 // =============================================================================
 // Configuration
