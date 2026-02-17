@@ -1,7 +1,7 @@
 name: 'Lint'
 
 env:
-  NODE_VERSION: "22.19.0"
+  NODE_VERSION: "lts/Krypton"
 
 on:
   push:
