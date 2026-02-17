@@ -90,7 +90,7 @@ jobs:
       contents: read
       pull-requests: read
       deployments: write
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: vars.DEPLOY == 'true' && ${{ github.author != 'dependabot[bot]' }}
     env:
       VERSION: snapshot
