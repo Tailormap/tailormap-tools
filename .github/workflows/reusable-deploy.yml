@@ -179,8 +179,6 @@ jobs:
           PROXY_PASSTHROUGH_HOSTNAMES: ${{ vars.PROXY_PASSTHROUGH_HOSTNAMES }}
         run: |
           cd tailormap-viewer
-          echo "${{ vars.PROXY_PASSTHROUGH_LAYERPATTERNS }}"
-          env
           docker compose config
           docker compose up -d --remove-orphans --pull=always
 
