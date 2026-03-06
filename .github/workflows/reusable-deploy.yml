@@ -91,7 +91,7 @@ jobs:
       pull-requests: read
       deployments: write
     runs-on: ubuntu-latest
-    if: vars.DEPLOY == 'true' && ${{ github.author != 'dependabot[bot]' }}
+    if: ${{ vars.DEPLOY == 'true' && github.author != 'dependabot[bot]' }}
     env:
       VERSION: snapshot
       COMPOSE_PROJECT_NAME: ${{ vars.DEPLOY_PROJECT_NAME }}-snapshot
