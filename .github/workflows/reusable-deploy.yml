@@ -174,7 +174,9 @@ jobs:
           TAILORMAP_IMAGE: ${{ vars.DEPLOY_IMAGE_TAG }}
           SOURCE_MAP_AUTH: ${{ secrets.SOURCE_MAP_AUTH }}
           HOST: ${{ vars.DEPLOY_HOSTNAME }}
-          COMPOSE_PROFILES: ${{ vars.DEPLOY_COMPOSE_PROFILES }} 
+          COMPOSE_PROFILES: ${{ vars.DEPLOY_COMPOSE_PROFILES }}
+          PROXY_PASSTHROUGH_LAYERPATTERNS: ${{ vars.PROXY_PASSTHROUGH_LAYERPATTERNS }}
+          PROXY_PASSTHROUGH_HOSTNAMES: ${{ vars.PROXY_PASSTHROUGH_HOSTNAMES }}
         run: |
           cd tailormap-viewer
           docker compose config
