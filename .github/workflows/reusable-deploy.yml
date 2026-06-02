@@ -18,6 +18,8 @@ on:
       DEPLOY_DOCKER_HOST_SSH_CERT:
       DEPLOY_DOCKER_HOST_SSH_KEY:
       SOURCE_MAP_AUTH:
+      MANAGEMENT_HASHED_PASSWORD:
+      MANAGEMENT_PASSWORD:
 
 jobs:
   lint:
@@ -181,7 +183,6 @@ jobs:
           MANAGEMENT_PASSWORD: ${{ secrets.MANAGEMENT_PASSWORD }}
         run: |
           cd tailormap-viewer
-          docker compose config
           docker compose up -d --remove-orphans --pull=always
 
       - name: 'Create GitHub deployment'
