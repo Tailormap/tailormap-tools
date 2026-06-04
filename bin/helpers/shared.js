@@ -147,6 +147,9 @@ const updatePeerDependencies = async (project) => {
     const packageJson = await getPackageJson(availableProject);
     let madeChanges = false;
     const keys = Object.keys(packageJson.peerDependencies);
+    if (!keys) {
+      return;
+    }
     for (const key of keys) {
       const scope = getScopeForLibrary(project);
       if (key === scope + '/' + project) {

@@ -19,7 +19,8 @@ if (addNgLibraries) {
   addNgLibraries.split(' ').forEach(library => {
     console.log('Adding Angular library: ' + library);
     try {
-      const output = execSync('npx ng add --skip-confirmation ' + library);
+      const app = process.env['ANGULAR_APP'] || 'app';
+      const output = execSync(`npx ng add --skip-confirmation --project=${app} ${library}`);
       console.log(output.toString());
       const idx = library.lastIndexOf('@');
       const packageName = idx > 0 ? library.substring(0, idx) : library;
