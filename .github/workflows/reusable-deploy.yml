@@ -20,6 +20,7 @@ on:
       SOURCE_MAP_AUTH:
       MANAGEMENT_HASHED_PASSWORD:
       MANAGEMENT_PASSWORD:
+      APPEND_NPMRC:
 
 jobs:
   lint:
@@ -141,7 +142,16 @@ jobs:
         # Always uses the 'snapshot' tag of the tailormap-api base image by setting the API_VERSION build arg
         run: |
           mv tailormap-starter/Dockerfile .
-          docker build --progress plain --pull --build-arg BASE_HREF=${BASE_HREF} --build-arg VERSION=${VERSION} --build-arg ANGULAR_APP=${{ vars.ANGULAR_APP || 'app' }} --build-arg API_VERSION=snapshot --tag ${{ vars.DEPLOY_IMAGE_TAG }}:${VERSION} .
+          docker build --progress plain --pull \
+            --build-arg BASE_HREF=${BASE_HREF} \
+            --build-arg VERSION=${VERSION} \
+            --build-arg ANGULAR_APP=${{ vars.ANGULAR_APP || 'app' }} \
+            --build-arg API_VERSION=snapshot \
+            --build-arg APPEND_NPMRC="${{ secrets.APPEND_NPMRC }}" \
+            --build-arg ADD_NG_LIBRARIES="${{ vars.ADD_NG_LIBRARIES }}" \
+            --build-arg API_VERSION=snapshot \
+            --tag ${{ vars.DEPLOY_IMAGE_TAG }}:${VERSION} \
+            .
           docker save ${{ vars.DEPLOY_IMAGE_TAG }}:${VERSION} > image.tar
 
       - name: 'Set Docker context for deployment'
