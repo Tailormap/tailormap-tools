@@ -71,8 +71,8 @@ const requestLibrary = async (message, callback) => {
     });
 };
 
-const getProbableVersion = async () => {
-  const project = availableLibraries[0];
+const getProbableVersion = async (library) => {
+  const project = library || availableLibraries[0];
   if (!project) {
     return '';
   }
@@ -82,13 +82,13 @@ const getProbableVersion = async () => {
   return version;
 }
 
-const requestVersion = async () => {
+const requestVersion = async (library) =>  {
   const inquirer = await import('inquirer');
   const answers = await inquirer.default.prompt([{
     type: 'input',
     name: 'version',
     message: 'What version do you want to release (e.g. 10.0.0-rc2)',
-    default: await getProbableVersion(),
+    default: await getProbableVersion(library),
     validate: function (value) {
       const versionRegex = new RegExp('^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$');
       if (!versionRegex.test(value)) {

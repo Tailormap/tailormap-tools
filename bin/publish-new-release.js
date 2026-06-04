@@ -10,7 +10,7 @@ checkCleanGitRepo();
   const dryRun = hasCliArgument('--dry-run');
 
   if (version === null) {
-    version = await requestVersion()
+    version = await requestVersion(library)
   }
 
   if (!version) {
