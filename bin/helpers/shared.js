@@ -146,10 +146,7 @@ const updatePeerDependencies = async (project) => {
   for (const availableProject of availableLibraries) {
     const packageJson = await getPackageJson(availableProject);
     let madeChanges = false;
-    const keys = Object.keys(packageJson.peerDependencies);
-    if (!keys) {
-      return;
-    }
+    const keys = Object.keys(packageJson.peerDependencies || {});
     for (const key of keys) {
       const scope = getScopeForLibrary(project);
       if (key === scope + '/' + project) {
@@ -170,7 +167,7 @@ const updateProjectPeerDependencies = async (project) => {
   const mainDependencies = mainPackageJson.dependencies || {};
   const packageJson = await getPackageJson(project);
   let madeChanges = false;
-  const keys = Object.keys(packageJson.peerDependencies);
+  const keys = Object.keys(packageJson.peerDependencies || {});
   for (const key of keys) {
     if (Object.prototype.hasOwnProperty.call(mainDependencies, key) && packageJson.peerDependencies[key] !== mainDependencies[key]) {
       console.log('Updating peer dependency for ' + key + ' from ' + packageJson.peerDependencies[key] + ' to ' + mainDependencies[key]);
