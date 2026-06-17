@@ -483,30 +483,56 @@ function installLibraryDependencies(sourcePath) {
   const pkgPath = path.join(sourcePath, 'package.json');
   if (!fs.existsSync(pkgPath)) {
     logInfo('No package.json found in source library, skipping dependency installation');
-    return;
+    return [];
   }
 
   const pkg = readJson(pkgPath);
   const deps = pkg.dependencies || {};
 
-  const toInstall = Object.entries(deps)
-    .filter(([name]) => name !== 'tslib')
-    .map(([name, version]) => `${name}@${version}`);
+  const projectPkg = readJson(path.join(SCRIPT_DIR, 'package.json')) || {};
+  const existingDeps = new Set([
+    ...Object.keys(projectPkg.dependencies || {}),
+    ...Object.keys(projectPkg.devDependencies || {}),
+    ...Object.keys(projectPkg.peerDependencies || {}),
+  ]);
+
+  const depEntries = Object.entries(deps).filter(
+    ([name]) => name !== 'tslib' && !existingDeps.has(name)
+  );
+  const toInstall = depEntries.map(([name, version]) => `${name}@${version}`);
 
   if (toInstall.length === 0) {
     logInfo('No additional dependencies to install');
-    return;
+    return [];
   }
 
   logInfo(`Installing library dependencies: ${toInstall.join(', ')}`);
   try {
-    execSync(`npm install --no-package-lock --no-save ${toInstall.join(' ')}`, {
+    execSync(`npm install --no-package-lock ${toInstall.join(' ')}`, {
       stdio: 'inherit',
       cwd: SCRIPT_DIR,
     });
     logSuccess('Library dependencies installed');
   } catch (e) {
     logWarning(`Failed to install library dependencies: ${e.message}`);
+    return [];
+  }
+
+  return depEntries.map(([name]) => name);
+}
+
+function uninstallLibraryDependencies(deps) {
+  if (!deps || deps.length === 0) return;
+
+  logInfo(`Uninstalling library dependencies: ${deps.join(', ')}`);
+  try {
+    execSync(`npm uninstall --no-package-lock ${deps.join(' ')}`, {
+      stdio: 'inherit',
+      cwd: SCRIPT_DIR,
+    });
+    logSuccess('Library dependencies uninstalled');
+  } catch (e) {
+    logWarning(`Failed to uninstall library dependencies: ${e.message}`);
   }
 }
 
@@ -563,7 +589,7 @@ function cmdLink(args) {
 
   // Perform linking
   const resolvedSource = createSymlink(absoluteSource, dirName);
-  installLibraryDependencies(resolvedSource);
+  const installedDeps = installLibraryDependencies(resolvedSource);
   addTsconfigPath(scope, dirName, libName);
   if (moduleClass) {
     addEnvironmentImport(scope, libName, moduleClass);
@@ -580,6 +606,7 @@ function cmdLink(args) {
     lib: libName,
     module: moduleClass || '',
     assets: withAssets,
+    deps: installedDeps,
   });
 
   console.log('');
@@ -609,7 +636,7 @@ function cmdUnlink(args) {
   }
 
   const moduleInfo = getModuleInfo(dirName);
-  let scope, libName, moduleClass, withAssets;
+  let scope, libName, moduleClass, withAssets, installedDeps;
 
   if (!moduleInfo) {
     logWarning(`Module '${dirName}' not found in state file, attempting cleanup anyway...`);
@@ -617,11 +644,13 @@ function cmdUnlink(args) {
     libName = dirName;
     moduleClass = '';
     withAssets = false;
+    installedDeps = [];
   } else {
     scope = moduleInfo.scope;
     libName = moduleInfo.lib || moduleInfo.name;
     moduleClass = moduleInfo.module || '';
     withAssets = moduleInfo.assets || false;
+    installedDeps = moduleInfo.deps || [];
   }
 
   logInfo(`Unlinking module: ${dirName}`);
@@ -643,6 +672,7 @@ function cmdUnlink(args) {
 
   // Perform unlinking
   removeSymlink(dirName);
+  uninstallLibraryDependencies(installedDeps);
   removeTsconfigPath(scope, libName);
   if (moduleClass) {
     removeEnvironmentImport(scope, libName, moduleClass);
