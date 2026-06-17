@@ -500,7 +500,7 @@ function installLibraryDependencies(sourcePath) {
 
   logInfo(`Installing library dependencies: ${toInstall.join(', ')}`);
   try {
-    execSync(`npm install --no-package-lock ${toInstall.join(' ')}`, {
+    execSync(`npm install --no-package-lock --no-save ${toInstall.join(' ')}`, {
       stdio: 'inherit',
       cwd: SCRIPT_DIR,
     });
