@@ -17,6 +17,7 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+import { execSync } from 'child_process';
 import {consoleMarkup} from "./helpers/shared.js";
 
 // =============================================================================
@@ -475,6 +476,41 @@ function removeSymlink(moduleName) {
 }
 
 // =============================================================================
+// Dependency Installation
+// =============================================================================
+
+function installLibraryDependencies(sourcePath) {
+  const pkgPath = path.join(sourcePath, 'package.json');
+  if (!fs.existsSync(pkgPath)) {
+    logInfo('No package.json found in source library, skipping dependency installation');
+    return;
+  }
+
+  const pkg = readJson(pkgPath);
+  const deps = pkg.dependencies || {};
+
+  const toInstall = Object.entries(deps)
+    .filter(([name]) => name !== 'tslib')
+    .map(([name, version]) => `${name}@${version}`);
+
+  if (toInstall.length === 0) {
+    logInfo('No additional dependencies to install');
+    return;
+  }
+
+  logInfo(`Installing library dependencies: ${toInstall.join(', ')}`);
+  try {
+    execSync(`npm install --no-package-lock ${toInstall.join(' ')}`, {
+      stdio: 'inherit',
+      cwd: SCRIPT_DIR,
+    });
+    logSuccess('Library dependencies installed');
+  } catch (e) {
+    logWarning(`Failed to install library dependencies: ${e.message}`);
+  }
+}
+
+// =============================================================================
 // Commands
 // =============================================================================
 
@@ -527,6 +563,7 @@ function cmdLink(args) {
 
   // Perform linking
   const resolvedSource = createSymlink(absoluteSource, dirName);
+  installLibraryDependencies(resolvedSource);
   addTsconfigPath(scope, dirName, libName);
   if (moduleClass) {
     addEnvironmentImport(scope, libName, moduleClass);
