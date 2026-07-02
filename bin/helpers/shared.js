@@ -17,7 +17,7 @@ const tmProjectFilePath = getPathFromProjectRoot('tm-project.json');
 
 if (!existsSync(tmProjectFilePath)) {
   console.error('A tm-project.json file is required for Tailormap tools to work. Please provide this, see README for more info. Also the scripts need to run from the root of the project.');
-  process.exit();
+  process.exit(1);
 }
 
 const tmProjectJson = readFileSync(tmProjectFilePath);
@@ -49,7 +49,7 @@ const checkCleanGitRepo = () => {
   const gitDirty = gitStatus !== '';
   if (gitDirty) {
     console.error('Git repository is dirty, please commit first before making a new release');
-    process.exit();
+    process.exit(1);
   }
 };
 
@@ -65,7 +65,7 @@ const requestLibrary = async (message, callback) => {
       const library = answers.library;
       if (!library) {
         console.error('Please select a library');
-        process.exit();
+        process.exit(1);
       }
       callback(library);
     });
@@ -185,7 +185,7 @@ const publishLibrary = async (project, version, dryRun) => {
   const registryFromPackageJson = packageJson.publishConfig?.registry;
   if (!registryFromPackageJson) {
     console.error(`Error: Did not find a publishConfig with registry URL in ${getPackageJsonPath(project)}`);
-    process.exit(0);
+    process.exit(1);
   }
   console.log(`Publishing release for ${project}. Supplied version: ${version}. Dry-run: ${dryRun ? 'true' : 'false'}`);
   const npmVersion = version.startsWith('v') ? version.substring(1) : version;
