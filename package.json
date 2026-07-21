@@ -16,11 +16,11 @@
     "tm-link-libraries": "bin/link-libraries.js"
   },
   "dependencies": {
-    "inquirer": "^13.0.2"
+    "inquirer": "^13.4.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "eslint": "^9.39.1",
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
     "globals": "^16.5.0"
   }
 }
