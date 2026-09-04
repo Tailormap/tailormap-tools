@@ -49,6 +49,7 @@ const checkCleanGitRepo = () => {
   const gitDirty = gitStatus !== '';
   if (gitDirty) {
     console.error('Git repository is dirty, please commit first before making a new release');
+    console.log('Git status:\n' + gitStatus);
     process.exit(1);
   }
 };
