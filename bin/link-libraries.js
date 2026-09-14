@@ -337,25 +337,32 @@ function detectAndAddAssets(sourcePath, dirName) {
 // environment.ts Management
 // =============================================================================
 
-function addEnvironmentImport(scope, libName, moduleClass) {
-  if (!moduleClass) {
-    logInfo('No module class specified, skipping environment.ts update');
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// `entrySuffix` lets the array entry differ from the imported identifier,
+// e.g. providers are functions and need to be invoked: `provideFoo()`.
+function addEnvironmentArrayEntry(scope, libName, className, arrayName, entrySuffix = '') {
+  if (!className) {
+    logInfo(`No ${arrayName === 'providers' ? 'provider' : 'module'} class specified, skipping environment.ts update`);
     return;
   }
 
   const importPath = `${scope}/${libName}`;
-  logInfo(`Adding '${moduleClass}' to environment.ts...`);
+  const entryText = `${className}${entrySuffix}`;
+  logInfo(`Adding '${entryText}' to environment.ts (${arrayName})...`);
 
   let content = fs.readFileSync(ENVIRONMENT_FILE, 'utf8');
 
   // Check if import already exists
-  if (content.includes(`import { ${moduleClass} }`)) {
-    logWarning(`Import for '${moduleClass}' already exists in environment.ts`);
+  if (content.includes(`import { ${className} }`)) {
+    logWarning(`Import for '${className}' already exists in environment.ts`);
     return;
   }
 
   // Add import statement after the last import
-  const importStatement = `import { ${moduleClass} } from '${importPath}';`;
+  const importStatement = `import { ${className} } from '${importPath}';`;
   const lastImportMatch = content.match(/^import .+;$/gm);
   if (lastImportMatch) {
     const lastImport = lastImportMatch[lastImportMatch.length - 1];
@@ -364,66 +371,88 @@ function addEnvironmentImport(scope, libName, moduleClass) {
     content = importStatement + '\n' + content;
   }
 
-  // Add module to imports array
-  if (!content.includes(`${moduleClass},`) && !content.includes(`${moduleClass}]`)) {
-    // Find the imports array closing bracket and add before it
+  // Add entry to the target array (e.g. imports or providers)
+  if (!content.includes(`${entryText},`) && !content.includes(`${entryText}]`)) {
+    // Find the target array closing bracket and add before it
     content = content.replace(
       /(\s*)(],?\s*)(};?\s*$)/m,
       (match, _indent, _bracket, _end) => {
-        // Find the imports: [ pattern and its closing ]
-        const importsMatch = content.match(/imports:\s*\[\s*([\s\S]*?)\s*\]/);
-        if (importsMatch) {
-          const oldImports = importsMatch[0];
-          const newImports = oldImports.replace(
+        // Find the <arrayName>: [ pattern and its closing ]
+        const arrayRegex = new RegExp(`${arrayName}:\\s*\\[\\s*([\\s\\S]*?)\\s*\\]`);
+        const arrayMatch = content.match(arrayRegex);
+        if (arrayMatch) {
+          const oldArray = arrayMatch[0];
+          const newArray = oldArray.replace(
             /(\s*)\],?/,
-            `$1  ${moduleClass},\n$1],`
+            `$1  ${entryText},\n$1],`
           );
-          content = content.replace(oldImports, newImports);
+          content = content.replace(oldArray, newArray);
         }
         return match;
       }
     );
 
-    // Alternative: direct replacement of imports array
-    const importsArrayMatch = content.match(/(imports:\s*\[)([\s\S]*?)(\s*\])/);
-    if (importsArrayMatch && !content.includes(`${moduleClass},`)) {
-      const [full, start, middle, end] = importsArrayMatch;
-      const newMiddle = middle.trimEnd() + `\n    ${moduleClass},`;
+    // Alternative: direct replacement of the target array
+    const arrayBlockRegex = new RegExp(`(${arrayName}:\\s*\\[)([\\s\\S]*?)(\\s*\\])`);
+    const arrayBlockMatch = content.match(arrayBlockRegex);
+    if (arrayBlockMatch && !content.includes(`${entryText},`)) {
+      const [full, start, middle, end] = arrayBlockMatch;
+      const newMiddle = middle.trimEnd() + `\n    ${entryText},`;
       content = content.replace(full, start + newMiddle + end);
     }
   }
 
   fs.writeFileSync(ENVIRONMENT_FILE, content);
-  logSuccess(`Added '${moduleClass}' to environment.ts`);
+  logSuccess(`Added '${entryText}' to environment.ts (${arrayName})`);
 }
 
-function removeEnvironmentImport(scope, libName, moduleClass) {
-  if (!moduleClass) {
-    logInfo('No module class specified, skipping environment.ts cleanup');
+function removeEnvironmentArrayEntry(scope, libName, className, arrayName, entrySuffix = '') {
+  if (!className) {
+    logInfo(`No ${arrayName === 'providers' ? 'provider' : 'module'} class specified, skipping environment.ts cleanup`);
     return;
   }
 
   const importPath = `${scope}/${libName}`;
-  logInfo(`Removing '${moduleClass}' from environment.ts...`);
+  const entryText = `${className}${entrySuffix}`;
+  logInfo(`Removing '${entryText}' from environment.ts (${arrayName})...`);
 
   let content = fs.readFileSync(ENVIRONMENT_FILE, 'utf8');
 
   // Remove import statement
   const importRegex = new RegExp(
-    `import\\s*\\{\\s*${moduleClass}\\s*\\}\\s*from\\s*'${importPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}';?\\n?`,
+    `import\\s*\\{\\s*${className}\\s*\\}\\s*from\\s*'${escapeRegExp(importPath)}';?\\n?`,
     'g'
   );
   content = content.replace(importRegex, '');
 
-  // Remove from imports array
-  const moduleRegex = new RegExp(`\\s*${moduleClass},?\\n?`, 'g');
-  content = content.replace(moduleRegex, '\n');
+  // Remove from the target array
+  const entryRegex = new RegExp(`\\s*${escapeRegExp(entryText)},?\\n?`, 'g');
+  content = content.replace(entryRegex, '\n');
 
   // Clean up any double newlines
   content = content.replace(/\n{3,}/g, '\n\n');
 
   fs.writeFileSync(ENVIRONMENT_FILE, content);
-  logSuccess(`Removed '${moduleClass}' from environment.ts`);
+  logSuccess(`Removed '${entryText}' from environment.ts (${arrayName})`);
+}
+
+// Legacy modules are added to the `imports` array in environment.ts.
+function addEnvironmentImport(scope, libName, moduleClass) {
+  addEnvironmentArrayEntry(scope, libName, moduleClass, 'imports');
+}
+
+function removeEnvironmentImport(scope, libName, moduleClass) {
+  removeEnvironmentArrayEntry(scope, libName, moduleClass, 'imports');
+}
+
+// Standalone libraries are added to the `providers` array in environment.ts.
+// Providers are functions (e.g. `provideFoo`), so they're invoked in the array: `provideFoo()`.
+function addEnvironmentProvider(scope, libName, providerClass) {
+  addEnvironmentArrayEntry(scope, libName, providerClass, 'providers', '()');
+}
+
+function removeEnvironmentProvider(scope, libName, providerClass) {
+  removeEnvironmentArrayEntry(scope, libName, providerClass, 'providers', '()');
 }
 
 // =============================================================================
@@ -546,6 +575,7 @@ function cmdLink(args) {
     name: '',
     lib: '',
     module: '',
+    provider: '',
     prefix: 'tm',
     assets: false,
   });
@@ -554,7 +584,7 @@ function cmdLink(args) {
   if (!sourcePath) {
     logError('Source path is required');
     console.log(
-      'Usage: node link-modules.js link <source-path> [--scope <scope>] [--name <name>] [--lib <lib>] [--module <class>] [--assets] [--prefix <prefix>]'
+      'Usage: node link-modules.js link <source-path> [--scope <scope>] [--name <name>] [--lib <lib>] [--module <class>] [--provider <fn>] [--assets] [--prefix <prefix>]'
     );
     process.exit(1);
   }
@@ -564,6 +594,7 @@ function cmdLink(args) {
   const libName = options.lib || dirName;
   const scope = options.scope;
   const moduleClass = options.module;
+  const providerClass = options.provider;
   const withAssets = options.assets;
   const prefix = options.prefix;
 
@@ -572,7 +603,10 @@ function cmdLink(args) {
   logInfo(`  Directory: projects/${dirName}`);
   logInfo(`  Import path: ${scope}/${libName}`);
   if (moduleClass) {
-    logInfo(`  Module class: ${moduleClass} (will be added to environment.ts)`);
+    logInfo(`  Module class: ${moduleClass} (will be added to environment.ts imports, legacy)`);
+  }
+  if (providerClass) {
+    logInfo(`  Provider function: ${providerClass}() (will be added to environment.ts providers)`);
   }
   if (withAssets) {
     logInfo('  Assets: will auto-detect and add assets/styles/translations');
@@ -583,7 +617,7 @@ function cmdLink(args) {
   // Backup files
   backupFile(TSCONFIG_FILE);
   backupFile(ANGULAR_JSON);
-  if (moduleClass) {
+  if (moduleClass || providerClass) {
     backupFile(ENVIRONMENT_FILE);
   }
 
@@ -593,6 +627,9 @@ function cmdLink(args) {
   addTsconfigPath(scope, dirName, libName);
   if (moduleClass) {
     addEnvironmentImport(scope, libName, moduleClass);
+  }
+  if (providerClass) {
+    addEnvironmentProvider(scope, libName, providerClass);
   }
   if (withAssets) {
     detectAndAddAssets(resolvedSource, dirName);
@@ -605,6 +642,7 @@ function cmdLink(args) {
     scope: scope,
     lib: libName,
     module: moduleClass || '',
+    provider: providerClass || '',
     assets: withAssets,
     deps: installedDeps,
   });
@@ -617,6 +655,10 @@ function cmdLink(args) {
   if (moduleClass) {
     console.log('');
     console.log(`The module '${moduleClass}' has been added to environment.ts imports.`);
+  }
+  if (providerClass) {
+    console.log('');
+    console.log(`The provider '${providerClass}()' has been added to environment.ts providers.`);
   }
   if (withAssets) {
     console.log('');
@@ -636,19 +678,21 @@ function cmdUnlink(args) {
   }
 
   const moduleInfo = getModuleInfo(dirName);
-  let scope, libName, moduleClass, withAssets, installedDeps;
+  let scope, libName, moduleClass, providerClass, withAssets, installedDeps;
 
   if (!moduleInfo) {
     logWarning(`Module '${dirName}' not found in state file, attempting cleanup anyway...`);
     scope = '@tailormap-viewer';
     libName = dirName;
     moduleClass = '';
+    providerClass = '';
     withAssets = false;
     installedDeps = [];
   } else {
     scope = moduleInfo.scope;
     libName = moduleInfo.lib || moduleInfo.name;
     moduleClass = moduleInfo.module || '';
+    providerClass = moduleInfo.provider || '';
     withAssets = moduleInfo.assets || false;
     installedDeps = moduleInfo.deps || [];
   }
@@ -658,6 +702,9 @@ function cmdUnlink(args) {
   if (moduleClass) {
     logInfo(`  Module class: ${moduleClass}`);
   }
+  if (providerClass) {
+    logInfo(`  Provider function: ${providerClass}()`);
+  }
   if (withAssets) {
     logInfo('  Assets: will be removed');
   }
@@ -666,7 +713,7 @@ function cmdUnlink(args) {
   // Backup files
   backupFile(TSCONFIG_FILE);
   backupFile(ANGULAR_JSON);
-  if (moduleClass) {
+  if (moduleClass || providerClass) {
     backupFile(ENVIRONMENT_FILE);
   }
 
@@ -676,6 +723,9 @@ function cmdUnlink(args) {
   removeTsconfigPath(scope, libName);
   if (moduleClass) {
     removeEnvironmentImport(scope, libName, moduleClass);
+  }
+  if (providerClass) {
+    removeEnvironmentProvider(scope, libName, providerClass);
   }
   if (withAssets) {
     removeAllModuleAssets(dirName);
@@ -702,6 +752,7 @@ function cmdList() {
       'DIRECTORY'.padEnd(15) +
       'IMPORT PATH'.padEnd(25) +
       'MODULE CLASS'.padEnd(18) +
+      'PROVIDER CLASS'.padEnd(20) +
       'ASSETS'.padEnd(7) +
       'SOURCE'
     );
@@ -710,18 +761,21 @@ function cmdList() {
       '---------'.padEnd(15) +
       '-----------'.padEnd(25) +
       '------------'.padEnd(18) +
+      '--------------'.padEnd(20) +
       '------'.padEnd(7) +
       '------'
     );
     for (const m of state.linkedModules) {
       const importPath = `${m.scope}/${m.lib || m.name}`;
       const moduleClass = m.module || '-';
+      const providerClass = m.provider || '-';
       const assets = m.assets ? '\u2713' : '-';
       console.log(
         '  ' +
         m.name.padEnd(15) +
         importPath.padEnd(25) +
         moduleClass.padEnd(18) +
+        providerClass.padEnd(20) +
         assets.padEnd(7) +
         m.source
       );
@@ -771,7 +825,10 @@ function cmdStatus() {
             console.log(`  ${consoleMarkup.green('\u2713')} ${m.name} -> ${linkTarget}`);
             console.log(`      Import: ${importPath}`);
             if (m.module) {
-              console.log(`      Module: ${m.module} (in environment.ts)`);
+              console.log(`      Module: ${m.module} (in environment.ts imports)`);
+            }
+            if (m.provider) {
+              console.log(`      Provider: ${m.provider} (in environment.ts providers)`);
             }
             if (m.assets) {
               console.log('      Assets: enabled');
@@ -873,7 +930,8 @@ COMMANDS:
         --scope <scope>  Package scope (default: @tailormap-viewer)
         --name <name>    Directory name in projects/ (default: source dir name)
         --lib <lib>      Library name for imports (default: same as --name)
-        --module <class> Angular module class to add to environment.ts (optional)
+        --module <class> Angular module class to add to environment.ts imports (legacy, optional)
+        --provider <fn>    Provider function to add (and call) in environment.ts providers (standalone libraries, optional)
         --assets         Auto-detect and add assets/styles/translations to angular.json
         --prefix <prefix> Angular component prefix (default: tm)
 
@@ -895,8 +953,11 @@ EXAMPLES:
     # Link with different directory name but keep original library name for imports
     node link-modules.js link ../tailormap-gbi/projects/shared --scope @tailormap-gbi --name gbi-shared --lib shared
 
-    # Link and add module to environment.ts
+    # Link and add module to environment.ts (legacy)
     node link-modules.js link ../tailormap-gbi/projects/maps --scope @tailormap-gbi --module GbiMapsModule
+
+    # Link a standalone library and call its provider function in environment.ts
+    node link-modules.js link ../tailormap-gbi/projects/maps --scope @tailormap-gbi --provider provideGbiMaps
 
     # Link with assets (like ng-add schematic)
     node link-modules.js link ../tailormap-gbi/projects/maps --scope @tailormap-gbi --module GbiMapsModule --assets
@@ -925,7 +986,8 @@ NOTES:
     - Backups are stored in .link-modules-backup/
     - State is tracked in .linked-modules.json
     - Use --lib when you need to avoid directory conflicts but keep original import paths
-    - Use --module to automatically add the Angular module to environment.ts
+    - Use --module to automatically add the Angular module to environment.ts imports (legacy)
+    - Use --provider to automatically add and call a provider function in environment.ts providers (standalone libraries)
     - Use --assets to replicate ng-add schematic behavior
 `);
 }
