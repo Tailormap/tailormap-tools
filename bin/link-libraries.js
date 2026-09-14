@@ -134,7 +134,8 @@ function getModuleInfo(dirName) {
 
 function addTsconfigPath(scope, dirName, libName) {
   const pathAlias = `${scope}/${libName}`;
-  const pathValue = `projects/${dirName}/src`;
+  // tsconfig.json has no 'baseUrl', so paths must be relative to it.
+  const pathValue = `./projects/${dirName}/src`;
 
   logInfo(`Adding path '${pathAlias}' to tsconfig.json...`);
 
