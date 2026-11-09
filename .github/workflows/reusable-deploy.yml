@@ -220,6 +220,10 @@ jobs:
         run: |
           cd tailormap-viewer
           docker compose up -d --remove-orphans --pull=always
+          # Remove the previous image, which docker load left untagged, and old versions of pulled images. This only removes
+          # dangling (untagged) images, so also those of other deployments on this host, but never tagged images, even if no
+          # container uses them.
+          docker image prune --force
 
       - name: 'Create GitHub deployment'
         if: ${{ success() && env.SKIP_DEPLOY != 'true' }}
