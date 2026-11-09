@@ -95,6 +95,14 @@ jobs:
       deployments: write
     runs-on: ubuntu-latest
     if: ${{ vars.DEPLOY == 'true' && github.author != 'dependabot[bot]' }}
+    # Deploy one run at a time per target: all snapshot deployments (pushes to main) of a repository and environment use the same
+    # Docker Compose project and image tag on the same Docker host. Two pushes to main in quick succession (merging two PRs, or a
+    # release) would otherwise deploy in parallel and fail with Docker container conflicts. Do not cancel a running deployment,
+    # that could leave the containers half updated. When another run is already waiting, GitHub replaces it with the newer one.
+    # In a reusable workflow, github.repository is the repository of the calling workflow.
+    concurrency:
+      group: deploy-${{ github.repository }}-${{ inputs.environment || 'test' }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'snapshot' }}
+      cancel-in-progress: false
     env:
       VERSION: snapshot
       COMPOSE_PROJECT_NAME: ${{ vars.DEPLOY_PROJECT_NAME }}-snapshot
@@ -154,7 +162,21 @@ jobs:
             .
           docker save ${{ vars.DEPLOY_IMAGE_TAG }}:${VERSION} > image.tar
 
+      - name: 'Check commit is still the head of main'
+        # Runs enter the deploy concurrency group in the order their tests finish, not in commit order. A run for an older commit
+        # could start after a run for a newer commit already deployed, and would overwrite the snapshot deployment with older
+        # code. Skip the deployment if main has moved on: a run for the newer commit has deployed already or will deploy after
+        # this one.
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        run: |
+          HEAD_SHA=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "${HEAD_SHA}" != "${GITHUB_SHA}" ]; then
+            echo "::notice::Skipping deployment of ${GITHUB_SHA}, main has moved on to ${HEAD_SHA}"
+            echo "SKIP_DEPLOY=true" >> $GITHUB_ENV
+          fi
+
       - name: 'Set Docker context for deployment'
+        if: ${{ env.SKIP_DEPLOY != 'true' }}
         uses: arwynfr/actions-docker-context@v2
         with:
           docker_host: ${{ secrets.DEPLOY_DOCKER_HOST }}
@@ -164,15 +186,18 @@ jobs:
           use_context: true
 
       - name: 'Add known hosts'
+        if: ${{ env.SKIP_DEPLOY != 'true' }}
         run: |
           DEPLOY_DOCKER_HOST=${{ secrets.DEPLOY_DOCKER_HOST }}
           ssh-keyscan -H ${DEPLOY_DOCKER_HOST##*@} > $HOME/.ssh/known_hosts
 
       - name: 'Load Docker image'
+        if: ${{ env.SKIP_DEPLOY != 'true' }}
         run: |
           cat image.tar | docker load
 
       - name: 'Download Docker Compose files'
+        if: ${{ env.SKIP_DEPLOY != 'true' }}
         uses: actions/checkout@v7
         with:
           repository: Tailormap/tailormap-viewer
@@ -182,6 +207,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: 'Update deployment using Docker Compose'
+        if: ${{ env.SKIP_DEPLOY != 'true' }}
         env:
           TAILORMAP_IMAGE: ${{ vars.DEPLOY_IMAGE_TAG }}
           SOURCE_MAP_AUTH: ${{ secrets.SOURCE_MAP_AUTH }}
@@ -194,9 +220,13 @@ jobs:
         run: |
           cd tailormap-viewer
           docker compose up -d --remove-orphans --pull=always
+          # Remove the previous image, which docker load left untagged, and old versions of pulled images. This only removes
+          # dangling (untagged) images, so also those of other deployments on this host, but never tagged images, even if no
+          # container uses them.
+          docker image prune --force
 
       - name: 'Create GitHub deployment'
-        if: success()
+        if: ${{ success() && env.SKIP_DEPLOY != 'true' }}
         uses: chrnorm/deployment-action@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
