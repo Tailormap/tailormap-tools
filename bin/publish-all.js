@@ -30,12 +30,19 @@ checkCleanGitRepo();
   try {
     await clearCache();
     for (const lib of availableLibraries) {
-      await publishLibrary(lib, version, dryRun);
+      await publishLibrary(lib, version, dryRun, true);
       // await sleep(5000);
     }
     if (!dryRun) {
       const tagVersion = version.startsWith('v') ? version : `v${version}`;
-      await runCommand('git', ['tag', tagVersion], getPathFromProjectRoot());
+      await runCommand('git', ['add', '-A']);
+      await runCommand('git', ['commit', '-m', `Released version ${version} of Tailormap`])
+      if (tagVersion.indexOf('-rc') !== -1) {
+        console.log('Release candidate, not tagging in Git');
+      } else {
+        console.log('Tagging release in Git with tag: ' + tagVersion);
+        await runCommand('git', ['tag', tagVersion], getPathFromProjectRoot());
+      }
     }
   } catch (e) {
     console.log('Error occurred: ', e);

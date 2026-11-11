@@ -181,7 +181,7 @@ const updateProjectPeerDependencies = async (project) => {
   }
 }
 
-const publishLibrary = async (project, version, dryRun) => {
+const publishLibrary = async (project, version, dryRun, skipCommit) => {
   const packageJson = await getPackageJson(project);
   const registryFromPackageJson = packageJson.publishConfig?.registry;
   if (!registryFromPackageJson) {
@@ -214,14 +214,14 @@ const publishLibrary = async (project, version, dryRun) => {
   await updatePeerDependencies(project);
   if (dryRun) {
     console.log('Would add all changed files to Git, but running in dry-run mode');
-  } else {
+  } else if (!skipCommit) {
     await runCommand('git', ['add', '-A']);
   }
   const currentVersion = await getCurrentVersion(project);
   const message = `Released version ${currentVersion} of ${project} project`;
   if (dryRun) {
     console.log('Would commit: ' + message + ', but running in dry-run mode');
-  } else {
+  } else if (!skipCommit) {
     await runCommand('git', ['commit', '-m', `Released version ${currentVersion} of ${project} project`])
   }
   console.log(message);
