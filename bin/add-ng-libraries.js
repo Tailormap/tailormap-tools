@@ -16,7 +16,9 @@ if (appendNpmRc) {
 const addNgLibraries = process.env['ADD_NG_LIBRARIES'];
 const addedPackages = [];
 if (addNgLibraries) {
-  addNgLibraries.split(' ').forEach(library => {
+  // Split on any whitespace so the libraries can also be separated by newlines (for example using a multiline value
+  // in a Docker Compose env file)
+  addNgLibraries.trim().split(/\s+/).filter(library => library.length > 0).forEach(library => {
     console.log('Adding Angular library: ' + library);
     try {
       const app = process.env['ANGULAR_APP'] || 'app';
