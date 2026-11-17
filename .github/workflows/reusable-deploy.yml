@@ -1,5 +1,5 @@
-env: # Keep this in sync with Dockerfile version from tailormap-starter, Krypton (== 24)
-  NODE_VERSION: "lts/Krypton"
+env: # Keep this in sync with Dockerfile version from tailormap-starter, Lithium (== 26)
+  NODE_VERSION: "lts/Lithium"
 
 on:
   workflow_call:
