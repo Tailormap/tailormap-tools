@@ -1,5 +1,5 @@
-env: # Keep this in sync with Dockerfile version from tailormap-starter, Krypton (== 24)
-  NODE_VERSION: "lts/Krypton"
+env: # Keep this in sync with Dockerfile version from tailormap-starter, Lithium (== 26)
+  NODE_VERSION: "lts/Lithium"
 
 on:
   workflow_call:
@@ -88,7 +88,15 @@ jobs:
 
   build:
     name: 'Build and deploy'
-    environment: ${{ inputs.environment || 'test' }}
+    # The job uses the environment only for its variables and secrets (a calling repository can set DEPLOY_HOSTNAME etc. per
+    # environment). With the default 'deployment: true' GitHub would create a deployment for every run, also for PRs and for runs
+    # that skip deploying, making a PR deployment the current one of the main environment. The 'Create GitHub deployment' step
+    # creates the deployment instead: in the main environment for main, and in a separate '<environment>-pr-<number>' environment
+    # for a PR, which reusable-undeploy.yml removes when the PR is closed. This is how GitHub intends environments to be used:
+    # one per deployment target.
+    environment:
+      name: ${{ inputs.environment || 'test' }}
+      deployment: false
     permissions:
       contents: read
       pull-requests: read
@@ -108,6 +116,7 @@ jobs:
       COMPOSE_PROJECT_NAME: ${{ vars.DEPLOY_PROJECT_NAME }}-snapshot
       COMPOSE_FILE: docker-compose.yml:docker-compose.traefik.yml
       BASE_HREF: /
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment || 'test' }}
     needs: [ lint, test ]
     steps:
       - uses: actions/checkout@v7
@@ -133,6 +142,8 @@ jobs:
           echo "COMPOSE_PROJECT_NAME=${{ vars.DEPLOY_PROJECT_NAME }}-pr-${PR}" >> $GITHUB_ENV
           echo "COMPOSE_FILE=docker-compose.yml:docker-compose.traefik.yml:ci/docker-compose.pr.yml" >> $GITHUB_ENV
           echo "BASE_HREF=/pull-request/${PR}/${GITHUB_HEAD_REF_SLUG_URL}/" >> $GITHUB_ENV
+          echo "DEPLOY_ENVIRONMENT=${DEPLOY_ENVIRONMENT}-pr-${PR}" >> $GITHUB_ENV
+          echo "DEPLOY_TRANSIENT=true" >> $GITHUB_ENV
 
       - name: 'Download Dockerfile'
         uses: actions/checkout@v7
@@ -226,11 +237,15 @@ jobs:
           docker image prune --force
 
       - name: 'Create GitHub deployment'
+        # Created only after a successful deployment, so a run that skips deploying (main has moved on) does not become the
+        # current deployment. GitHub shows the latest successful deployment of an environment as the current one.
         if: ${{ success() && env.SKIP_DEPLOY != 'true' }}
         uses: chrnorm/deployment-action@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           environment-url: "https://${{ vars.DEPLOY_HOSTNAME }}${{ env.BASE_HREF }}${{ vars.DEPLOY_URL_PATH }}"
-          environment: ${{ inputs.environment || 'test' }}
+          environment: ${{ env.DEPLOY_ENVIRONMENT }}
+          transient-environment: ${{ env.DEPLOY_TRANSIENT == 'true' }}
+          production-environment: false
           initial-status: success
           ref: "${{ env.GITHUB_HEAD_REF }}"
