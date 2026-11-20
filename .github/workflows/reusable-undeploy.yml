@@ -8,11 +8,25 @@ on:
       DEPLOY_DOCKER_HOST:
       DEPLOY_DOCKER_HOST_SSH_CERT:
       DEPLOY_DOCKER_HOST_SSH_KEY:
+      # Optional token allowed to delete environments (fine-grained PAT or GitHub App token with "Administration: write" on the
+      # repository). GITHUB_TOKEN can't delete environments. Without it only the deployments of the PR environment are deleted
+      # and the empty environment stays behind.
+      DEPLOYMENT_CLEANUP_TOKEN:
 
 jobs:
   undeploy:
-    environment: ${{ inputs.environment || 'test' }}
+    # The environment is only used for its variables and secrets, don't create a deployment for undeploying. See
+    # reusable-deploy.yml.
+    environment:
+      name: ${{ inputs.environment || 'test' }}
+      deployment: false
+    # The calling workflow must grant these permissions, a reusable workflow can't get more than its caller has.
+    permissions:
+      contents: read
+      deployments: write
     runs-on: ubuntu-latest
+    env:
+      PR_ENVIRONMENT: ${{ inputs.environment || 'test' }}-pr-${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v7
 
@@ -55,14 +69,21 @@ jobs:
           docker compose config
           docker compose down --rmi all --volumes --remove-orphans
 
-      - name: 'GitHub Slug Action'
-        uses: rlespinasse/github-slug-action@v5
-
-      - name: 'Remove GitHub deployment and environment'
+      - name: 'Remove GitHub PR environment'
         if: ${{ always() }}
         uses: strumwolf/delete-deployment-environment@v4.0.0
         with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
+          token: ${{ secrets.DEPLOYMENT_CLEANUP_TOKEN || secrets.GITHUB_TOKEN }}
+          environment: ${{ env.PR_ENVIRONMENT }}
+          onlyRemoveDeployments: ${{ secrets.DEPLOYMENT_CLEANUP_TOKEN == '' }}
+
+      - name: 'Remove GitHub deployments in the main environment'
+        # Before PR deployments got their own environment they were created in the main environment. Remove those for PRs that
+        # were deployed before that change. This step can be removed once those PRs are closed.
+        if: ${{ always() }}
+        uses: strumwolf/delete-deployment-environment@v4.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           environment: ${{ inputs.environment || 'test' }}
           onlyRemoveDeployments: true
-          ref: "${{ env.GITHUB_HEAD_REF }}"
+          ref: ${{ github.head_ref }}
